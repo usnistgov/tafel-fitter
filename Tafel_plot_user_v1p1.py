@@ -47,12 +47,12 @@ def plot_h(array, xcol_index, ycol_index, interval, file0):
     #Extracting binned dataset from input array:
     binned_data = binner(array, xcol_index, ycol_index, interval)
     binned, binnedR2s, fullarray = binned_data[1:4]
-    print 'Binned Array of dV-Optimized Tafel Values:'
+    print('Binned Array of dV-Optimized Tafel Values:')
     dataframe1 = pd.DataFrame(binned, columns = ['Tafel Bin / mV decade-1', 'R2 threshold', 'Overpotential Width / V', 'Tafel slope / mV Decade-1', 'Exchange Current / A', 'Optimal Residual', 'Starting Fit Overpotential / V', 'Tafel R2', 'LSV R2', 'Ending Fit Potential'])
-    print dataframe1
-    print 'dV+R2-optimized Fits:'
+    print(dataframe1)
+    print('dV+R2-optimized Fits:')
     dataframe2 = pd.DataFrame(binnedR2s, columns = ['Tafel Bin / mV decade-1', 'R2 threshold', 'Overpotential Width / V', 'Tafel slope / mV Decade-1', 'Exchange Current / A', 'Optimal Residual', 'Starting Fit Overpotential / V', 'Tafel R2', 'LSV R2', 'Ending Fit Potential'])
-    print dataframe2
+    print(dataframe2)
 
     #Display the potential range of Residue-optimized fits:
     mt.subplot(2, 3, 1) #2d histogram of (dV, Tafel slope, Z=counts)
@@ -75,14 +75,14 @@ def plot_h(array, xcol_index, ycol_index, interval, file0):
     mt.plot(binned[:,0], abs(binned[:,2]), 'co') #optimal dV-binned fits
     mt.plot(binnedR2s[:,0], abs(binnedR2s[:,2]), 'ro') #optimal dV, R2-binned fit(s)
     mt.plot(fullarray[:,0], abs(fullarray[:,2]), 'k+') #full array data, binned
-    mt.xlabel('Tafel Slope Bin / mV decade$^-$$^1$'); mt.ylabel('Overpotential Fit Width / V')    
+    mt.xlabel('Tafel Slope Bin / mV decade$^-$$^1$'); mt.ylabel('Overpotential Fit Width / V')
     #Plot of Binned dataset (x,y) = (Tafel slope bin, R2)
     mt.subplot(2, 3, 5)
     mt.plot(binned[:,0], binned[:,7], 'co') #optimal dV-binned fits
     mt.plot(binnedR2s[:,0], binnedR2s[:,7], 'ro') #optimal dV, R2-binned fit(s)
     mt.plot(fullarray[:,0], fullarray[:,7], 'k+') #full array data, binned
     mt.xlabel('Tafel Slope Bin / mV decade$^-$$^1$'); mt.ylabel('Tafel Fit R$^2$')
-    
+
     #Scatter plot of all fits yielding dV and R2-optimized Tafel slopes.
     mt.subplot(2, 3, 6)
     #1. Generate contour map:
@@ -114,7 +114,7 @@ def bin_file(filename, xcol_index, ycol_index, interval):
     return binner(array, xcol_index, ycol_index, interval)
 
 #Binning function.
-def binner(array, xcol_index, ycol_index, interval): 
+def binner(array, xcol_index, ycol_index, interval):
     array = array[array[:,xcol_index].argsort()] #sort array monotonically by Tafel slope (x) column.
     x_array = array[:, xcol_index]; y_array = array[:, ycol_index]
     bincount = calc_bin(min(x_array), max(x_array), interval)
@@ -126,19 +126,19 @@ def binner(array, xcol_index, ycol_index, interval):
     for every in bin_index:
         bin_value.append(bin_edges[every])
     array[:,0] = bin_value
-    
+
     #return the first index of each unique bin value in "array":
     unique, first_index = np.unique(array[:,0], return_index = True)
-    
+
     #Find the bin(s) with the highest number of unique voltage widths (unique dVs); generates a list.
-    unique_dVs = np.zeros((len(first_index),3)); counter = 0 
+    unique_dVs = np.zeros((len(first_index),3)); counter = 0
     unique_dVs[:,0] = first_index
     while counter + 1 < len(first_index):
         unique_dVs[counter,1] = len(np.unique(array[ first_index[counter]:first_index[counter+1], 2] ) )
         counter += 1
     if counter + 1 == len(first_index): #Account for data in the last bin:
         unique_dVs[counter,1] = len(np.unique(array[ first_index[counter]:, 2] ) )
-    
+
     #calculate the total number of members in each bin:
     counter = 0
     while counter + 1 < len(unique_dVs):
@@ -147,7 +147,7 @@ def binner(array, xcol_index, ycol_index, interval):
     if counter + 1 == len(unique_dVs):
         unique_dVs[counter,2] = (len(array)-1) - unique_dVs[counter,0]
     mostdVs = indexer(max(unique_dVs[:,1]), unique_dVs[:,1])[0] #list of the starting indices of the widest-spanning Tafel bins.
-    
+
     #Find required length for binned array:
     l = 0
     for every in mostdVs:
@@ -159,7 +159,7 @@ def binner(array, xcol_index, ycol_index, interval):
         array_index = unique_dVs[int(every),0] ; binsize = unique_dVs[int(every),2]
         binned[counter:int(counter + binsize),:] = array[int(array_index):int(array_index + binsize),:]
         counter += int(binsize)
-    
+
     #Find the fits with the maximal R2 in the Tafel bin.
     maxR2s = indexer(max(binned[:,7]), binned[:,7])[0]
     binnedR2s = np.zeros((len(maxR2s), 10)); counter = 0
@@ -170,16 +170,16 @@ def binner(array, xcol_index, ycol_index, interval):
     return l, binned, binnedR2s, array, mostdVs, unique_dVs, maxR2s  #bin value of the optimum fit
 
 def Plot_fit():
-    print 'Use this for plotting the residue-minimized datasets generated through fitting (*minimized_residues.csv).'
-    print 'Files to be analyzed must be in the current working directory.'
+    print('Use this for plotting the residue-minimized datasets generated through fitting (*minimized_residues.csv).')
+    print('Files to be analyzed must be in the current working directory.')
     filedir = os.getcwd() + '/*.csv'; optimizations = np.sort(glob.glob(filedir))
     counter = 0
-    print 'File number\t', 'Filename'
+    print('File number\t', 'Filename')
     for each in optimizations:
-        print counter, '\t', each
+        print(counter, '\t', each)
         counter += 1
-    f = input('Which residue-optimized dataset do you want to inspect (enter file number)?: ')
-    bin_val = input('Enter a binning value for these data (1 mV/decade is typical): ')
+    f = int(input('Which residue-optimized dataset do you want to inspect (enter file number)?: '))
+    bin_val = float(input('Enter a binning value for these data (1 mV/decade is typical): '))
     plot(optimizations[f], 3,2, bin_val)
 
 def batch_plot(path):

@@ -53,11 +53,11 @@ def Vary_param_fit(filename, header, excelsheet, n, interval, delta_interval, rb
                 else:
                     figs_of_merit[counter, :] = R2, dV, slope, io, residual, fit_start, R2_tafel, R2_LSV, (fit_start + dV)
                 fitcounts += x[3]; recursions += x[3]
-            print 'For minimum R2 = ' + str(R2) + ', voltage interval width = ' + str(dV) +'\n'
+            print('For minimum R2 = ' + str(R2) + ', voltage interval width = ' + str(dV) +'\n')
             counter += 1
     saveto = extract_filename(filename)[2]
-    print 'Total number of compliant fits: ' + str(fitcounts)
-    print 'Total number of fit conditions tested (# of program recursions): ' + str(recursions)
+    print('Total number of compliant fits: ' + str(fitcounts))
+    print('Total number of fit conditions tested (# of program recursions): ' + str(recursions))
     #cleaning out [0] row vectors from array (conditions yielding no possible fits); re-initialize counter:
     if np.zeros((1,9)) in figs_of_merit:
         counter = 0
@@ -88,7 +88,7 @@ def Fit(filename, header, excelsheet, interval, rbound, n):
     saveto = extract_filename(filename)[2]
     x = fit_engine(voltage, tafel, lsv, interval, rbound, n)
     if type(x) == int:
-       print 'No fit possible for these constraints.'
+       print('No fit possible for these constraints.')
        fitcount = fit_engine(voltage, tafel, lsv, interval, rbound, n)
        return x, fitcount
     else:
@@ -100,12 +100,12 @@ def Fit(filename, header, excelsheet, interval, rbound, n):
         dataframe = pd.DataFrame(chart, columns = ['Bound 1 (V)', 'Bound 2 (V)', 'Exchange Current', 'Tafel Slope'])
         dataframe.to_csv(currentdir + '/Fits/' + saveto + '_n=' + str(n) + '/' + saveto + '_int=' + str(interval) +'V_' + 'R2='+ str(rbound) + '_n=' + str(n) + '_Fit_Summary.csv')
         dataframe2.to_csv(currentdir + '/Fits/' + saveto + '_n=' + str(n) + '/' + saveto + '_int=' + str(interval) +'V_' + 'R2='+ str(rbound) + '_n=' + str(n) + '_Fit_Results.csv')
-        print
-        print 'Voltage cutoff = ' + str(voltage[x[7]]) + ' V'
-        print 'Fit Interval / V\t', 'Exchange Current / A\t', 'Tafel slope (mV/decade)\t', 'Tafel Residue'
-        print str(x[1]), '\t', str(b), '\t', str(m), '\t', x[0][fit_index]
-        print
-        print 'Actual Tafel R2: \t' + str(x[10][fit_index]) + ' ; Actual LSV R2: \t' + str(x[11][fit_index])    
+        print()
+        print('Voltage cutoff = ' + str(voltage[x[7]]) + ' V')
+        print('Fit Interval / V\t', 'Exchange Current / A\t', 'Tafel slope (mV/decade)\t', 'Tafel Residue')
+        print(str(x[1]), '\t', str(b), '\t', str(m), '\t', x[0][fit_index])
+        print()
+        print('Actual Tafel R2: \t' + str(x[10][fit_index]) + ' ; Actual LSV R2: \t' + str(x[11][fit_index]))
         #Plot as four axes, returned as a 2-d array
         plt.subplot(2, 2, 1)
         plt.plot(voltage, tafel, 'ko-')
@@ -120,7 +120,7 @@ def Fit(filename, header, excelsheet, interval, rbound, n):
         #plt.xlabel('Overpotential / V')
         plt.ylabel('log i')
         plt.grid(False)
-    
+
         plt.subplot(2, 2, 3)
         plt.plot(voltage, lsv, 'k-')
         plt.title('LSV')
@@ -140,7 +140,7 @@ def Fit(filename, header, excelsheet, interval, rbound, n):
         plt.title('Differential LSV')
         plt.xlabel('Overpotential / V'); plt.ylabel('di/dV')
         plt.grid(False)#; plt.show()
-        
+
         figure = plt.gcf(); figure.set_size_inches(19.2, 10.8)
         plt.tight_layout()
         plt.savefig(currentdir + '/Fits/' + saveto + '_n=' + str(n) + '/' + saveto + '_int=' + str(interval)+'V_' + 'R2='+ str(rbound) + '_n=' + str(n) + '_PLOTS.png')
@@ -155,25 +155,25 @@ def fit_engine(voltage, ytafel, ylsv, interval, rbound, n):
     fitlist = []
     for every in dx:
         fitlist.append(p(every))
-    inflection = indexer(max(fitlist), fitlist)[0][0] 
+    inflection = indexer(max(fitlist), fitlist)[0][0]
     if bool(inflection):
         #fit using values below the dlsv maximum (before the onset of diffusion effects)
         #truncating data to exclude values below dlsv maximum:
         voltage_sub = voltage[:inflection]; ytafel_sub = ytafel[:inflection]; ylsv_sub = ylsv[:inflection]
-    else: 
+    else:
         voltage_sub = voltage; ytafel_sub = ytafel; ylsv_sub = ylsv
         inflection = None
-    
+
     counter = 0
     lst = [ [],[],[],[],[],[] ]; taf_slopes = []
     if voltage_sub[-1] > 0:#Condition for anode data.
-        while voltage_sub[counter] + interval < voltage_sub[-1]: 
+        while voltage_sub[counter] + interval < voltage_sub[-1]:
             index = approx_index(voltage_sub[counter]+interval, voltage_sub)[0][0]
             # stats.lingress output: [ slope, intercept, r, p_value, std_error ]
             test1 = scipy.stats.linregress(voltage_sub[counter : counter + index], ytafel_sub[counter : counter + index])
             test2 = scipy.stats.linregress(voltage_sub[counter : counter + index], ylsv_sub[counter : counter + index])
             # Test regions for linearity:
-            dlogjdV = 1000/(test1[0]); J0 = 10**( test1[1] ); djdV = abs( test2[0] )  
+            dlogjdV = 1000/(test1[0]); J0 = 10**( test1[1] ); djdV = abs( test2[0] )
             #JO = y-intercept of Tafel regression, djdV = slope of LSV regression, dlogJ/dV = slope of Tafel regression
             R2_Tafel = test1[2]**2; R2_LSV = test2[2]**2
             if R2_Tafel >= rbound and R2_LSV >= rbound: #if R2 correlation is at least greater than some threshold for linearity (rbound):
@@ -193,7 +193,7 @@ def fit_engine(voltage, ytafel, ylsv, interval, rbound, n):
             test1 = scipy.stats.linregress(voltage_sub[counter : counter + index], ytafel_sub[counter : counter + index])
             test2 = scipy.stats.linregress(voltage_sub[counter : counter + index], ylsv_sub[counter : counter + index])
             # Test regions for linearity:
-            dlogjdV = 1000/(test1[0]); J0 = 10**( test1[1] ); djdV = abs( test2[0] )  
+            dlogjdV = 1000/(test1[0]); J0 = 10**( test1[1] ); djdV = abs( test2[0] )
             #JO = y-intercept of Tafel regression, djdV = slope of LSV regression, dlogJ/dV = slope of Tafel regression
             R2_Tafel = test1[2]**2; R2_LSV = test2[2]**2
             if R2_Tafel >= rbound and R2_LSV >= rbound: #if R2 correlation is at least greater than some threshold for linearity (rbound):
@@ -219,26 +219,26 @@ def fit_engine(voltage, ytafel, ylsv, interval, rbound, n):
         if voltage_sub[-1] > 0:
             fit_range = [lst1_voltages[residue_index], lst1_voltages[residue_index] + interval]
         else:
-            fit_range = [lst1_voltages[residue_index], lst1_voltages[residue_index] - interval]  
+            fit_range = [lst1_voltages[residue_index], lst1_voltages[residue_index] - interval]
         exchange_rate = lst[0][residue_index] #return the JO from the ideal fit
         chart = np.zeros([len(lst[0]), 7])
         chart[:,0] = lst1_voltages; chart[:,1] = lst[0]; chart[:,2] = lst1_slopes; chart[:,3] = residue
         chart[:,4] = lst[4]; chart[:,5] = lst[5]; chart[:,6] = taf_slopes
         dataframe = pd.DataFrame(chart, columns = ['Starting Potentials', 'J0', 'dJ/dV', 'Residue (|J0*F/RT-dJ/dV|)', 'Tafel R^2', 'LSV R^2', 'Tafel Slope / mV decade-1'])
-        return residue, fit_range, exchange_rate, lst1_voltages, dx, dy, fitlist, inflection, dataframe, taf_slopes, lst[4], lst[5], residue_index, counter 
+        return residue, fit_range, exchange_rate, lst1_voltages, dx, dy, fitlist, inflection, dataframe, taf_slopes, lst[4], lst[5], residue_index, counter
     else:
         return counter
 
 #use to perform quick visual checks of differential LSV data prior to fitting;
 def check_difflsv(filename):
     if filename[-3:] =='csv':
-        header = input('provide first line of data to remove headers: ')
+        header = int(input('provide first line of data to remove headers: '))
         data = np.loadtxt(filename, skiprows = header, delimiter = ',')
         voltage = data[:,0]; lsv = data[:,1]
     else:
-        print 'Invalid file format provided. Use .csv files only'
+        print('Invalid file format provided. Use .csv files only')
         file = input('Filename of dataset: ')
-        print
+        print()
         check_difflsv(file)
     dx, dy = derivative(voltage, lsv)
     plt.plot(dx, dy, 'bo'); plt.show()
@@ -252,25 +252,25 @@ def derivative(xlist, ylist):
          dxlist.append(xbar); dydxlist.append(diff)
          z += 1
     return dxlist, dydxlist
-   
+
 """General, user-friendly call procedure; interactive prompts; .csv files only.
 interval is a list of low and high overpotential widths to use for fitting (i.e, interval = [low, high]).
 rbound is a list of the same form as interval for low and high R2 values to fit over
 delta_* variables are integer or float values controlling the increment variation of their respective parameters."""
 def Run():
-    print 'Files to be analyzed must be in the current working directory.'
+    print('Files to be analyzed must be in the current working directory.')
     #filedir = os.getcwd() + '/*.csv'; files = np.sort(glob.glob(filedir))
     files = np.sort(glob.glob(direc))
     counter = 0
-    print 'File number\t', 'Filename'
+    print('File number\t', 'Filename')
     for each in files:
-        print counter, '\t', each
+        print(counter, '\t', each)
         counter += 1
-        
-    f = input('Which dataset do you want to inspect (enter file number)? ') 
+
+    f = int(input('Which dataset do you want to inspect (enter file number)? '))
     if files[f][-4:] == '.csv':
-        header = input('Enter the last line of the file header (enter "0" if none present): ')
-        fit_order = input('Fit dLSV with a polynomial of order n = 1,2,3..? ')
+        header = int(input('Enter the last line of the file header (enter "0" if none present): '))
+        fit_order = int(input('Fit dLSV with a polynomial of order n = 1,2,3..? '))
         data = np.loadtxt(files[f], skiprows = header, delimiter = ',')
         voltage = data[:,0]; lsv = data[:,1]
         dx, dy = derivative(voltage, lsv)
@@ -291,16 +291,16 @@ def Run():
         plt.ylabel('I / Amps'); plt.grid(False)
         figure = plt.gcf(); figure.set_size_inches(9.6, 5.4)
         plt.tight_layout(); plt.show()
-        print 'voltage cutoff (blue dotted line) = ' + str(voltage[inflection]) + ' V'
-        accept = raw_input('do you want to accept this fit (y/n)? ')
+        print('voltage cutoff (blue dotted line) = ' + str(voltage[inflection]) + ' V')
+        accept = input('do you want to accept this fit (y/n)? ')
         if accept == 'Y' or 'y':
-            interval = input('Enter the range of overpotential window sizes (dV) to check, in volts (i.e., [0.01, 0.05] ): ')
-            delta_interval = input('Enter the dV increment to use, in volts (i.e., 0.001): ')
-            rbound = input('Enter the range of R-squared values over which to conduct the fits (i.e., [0.900, 1.000] ): ')
-            delta_rbound = input('Enter the increment for the R-squared value range (i.e., 0.001): ' )
-            binning = input('Enter the binning size to use for dV-span optimization, in millivolts (1 mV default): ')
+            interval = eval(input('Enter the range of overpotential window sizes (dV) to check, in volts (i.e., [0.01, 0.05] ): '))
+            delta_interval = float(input('Enter the dV increment to use, in volts (i.e., 0.001): '))
+            rbound = eval(input('Enter the range of R-squared values over which to conduct the fits (i.e., [0.900, 1.000] ): '))
+            delta_rbound = eval(input('Enter the increment for the R-squared value range (i.e., 0.001): ' ))
+            binning = float(input('Enter the binning size to use for dV-span optimization, in millivolts (1 mV default): '))
             Tfit_plot(files[f], header, 0, 1, interval, delta_interval, rbound, delta_rbound, binning)
         else:
             Run()
     else:
-        print 'Input files must be in .csv format.'
+        print('Input files must be in .csv format.')
