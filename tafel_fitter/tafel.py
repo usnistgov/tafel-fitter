@@ -21,7 +21,7 @@ def estimate_overpotential(x, y, w=10):
 
     return x - res.x
 
-def tafel_fit(x, y, windows=np.arange(0.025, 0.1, 0.001)):
+def tafel_fit(x, y, windows=(0.025, 0.1), tafel_binsize=0.001):
 
     segments = {
         "cathodic": x < 0,
@@ -35,7 +35,7 @@ def tafel_fit(x, y, windows=np.arange(0.025, 0.1, 0.001)):
 
         results = fit_all(xx, yy, scan_type=segment, windows=windows)
         d = filter_r2(results)
-        best_fit, subset = find_best_fit(d, tafel_binsize=0.01)
+        best_fit, subset = find_best_fit(d, tafel_binsize=tafel_binsize)
 
         tafel_data[segment] = best_fit
         fits[segment] = subset
@@ -45,14 +45,18 @@ def tafel_fit(x, y, windows=np.arange(0.025, 0.1, 0.001)):
 def fit_all(
     x: np.array,
     y: np.array,
-    windows: np.array = np.arange(0.01, 0.05, 0.001),
+    windows: np.array = (0.01, 0.05),
     R2_thresh: float = 0.9,
     scan_type="cathodic"
 ) -> pd.DataFrame:
     """ fit tafel model on all sub-windows for each window size in `windows` """
 
+    minsize, maxsize = windows
+    minsamples = int(np.round(minsize/ np.median(np.diff(x))))
+    maxsamples = int(np.round(maxsize/ np.median(np.diff(x))))
+
     df = []
-    for windowsize in windows:
+    for windowsize in range(minsamples, maxsamples):
         df.append(fit_windows(x, y, windowsize, n=1, scan_type=scan_type))
 
     df = pd.concat(df)
@@ -65,7 +69,7 @@ def fit_all(
 def fit_windows(
     potential: np.array,
     current: np.array,
-    window: float,
+    window: int,
     n: int = 1,
     scan_type: str = "cathodic",
 ) -> pd.DataFrame:
@@ -75,7 +79,6 @@ def fit_windows(
     """
 
     # explicit loop is over LSV samples, not raw potential values
-    window_samples = int(np.round(window / np.median(np.diff(potential))))
     log_current = np.log10(np.abs(current))
 
     # check for transport effects
@@ -85,16 +88,16 @@ def fit_windows(
 
     # fit on all intervals of size `window`
     results = []
-    for idx in range(len(potential) - window_samples):
+    for idx in range(len(potential) - window):
 
         if scan_type == "cathodic":
             # cathodic scans run "backwards" in time
             # start at open circuit and stride backwards towards more negative potential
-            mask = slice(-(idx + 1) - window_samples, -(idx + 1))
+            mask = slice(-(idx + 1) - window, -(idx + 1))
         elif scan_type == "anodic":
             # anodic scans run forwards/intuitively
             # start at open circuit and stride forwards towards more positive potential
-            mask = slice(idx, idx + window_samples)
+            mask = slice(idx, idx + window)
 
         # fit Tafel data
         slope_tafel, intercept_tafel, r_tafel, *rest = stats.linregress(
