@@ -14,12 +14,13 @@ def fit_all(
     y: np.array,
     windows: np.array = np.arange(0.01, 0.05, 0.001),
     R2_thresh: float = 0.9,
+    scan_type="cathodic"
 ) -> pd.DataFrame:
     """ fit tafel model on all sub-windows for each window size in `windows` """
 
     df = []
     for windowsize in windows:
-        df.append(fit_windows(x, y, windowsize, n=1))
+        df.append(fit_windows(x, y, windowsize, n=1, scan_type=scan_type))
 
     df = pd.concat(df)
 
@@ -74,7 +75,10 @@ def fit_windows(
             {
                 "j0": 10 ** intercept_tafel,  # exchange current
                 "dj/dV": abs(slope_lsv),  # LSV slope ~ j0 in the Tafel regime
-                "dlog(j)/dV": 1000 / slope_tafel,  # tafel slope (mV/decade)
+                # "dlog(j)/dV": 1000 / slope_tafel,  # tafel slope (mV/decade)
+                "dlog(j)/dV": slope_tafel,
+                "intercept_tafel": intercept_tafel,
+                "slope_tafel": slope_tafel,
                 "window_start": potential[idx],
                 "window_min": potential[mask].min(),
                 "window_max": potential[mask].max(),
