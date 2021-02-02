@@ -4,28 +4,30 @@
 Example:
 
 ```python
-import numpy as np
-import pandas as pd
-from tafel_fitter import tafel
+df = pd.read_csv("Input_files/test1.csv")
 
-df = pd.read_csv("Input_files/Pt-HER_100mM_perchloric_acid_2500rpm.csv")
-x = df["Overpotential / V"].values
-y = df["<I>/A"].values
+x = df["overpotential"].values
+y = df["current"].values
+u = tafel.estimate_overpotential(x, y)
+tafel_data, fits = tafel.tafel_fit(u, y, windows=np.arange(0.025, 0.25, 0.001))
 
-i = -3
-x = x[:i]
-y = y[:i]
 
-results = tafel.fit_all(x, y)
-results.head()
-d = tafel.filter_r2(results)
-best_fit, subset = tafel.find_best_fit(d)
+plt.plot(u, np.log10(np.abs(y)), marker="o")
+lims = plt.gca().get_ylim()
 
-plt.plot(x, np.log10(np.abs(y)))
-plt.plot(x, np.log10(best_fit["j0"]) + best_fit["dlog(j)/dV"]*x, color="k")
-plt.axvline(best_fit["window_min"], color='k', alpha=0.5)
-plt.axvline(best_fit["window_max"], color='k', alpha=0.5)
+colors = ["g", "m"]
+for idx, (segment, best_fit) in enumerate(tafel_data.items()):
+
+    plt.plot(u, np.log10(best_fit["j0"]) + best_fit["dlog(j)/dV"]*u, color=colors[idx])
+    plt.axhline(np.log10(best_fit["j0"]), label=f"j0 {segment}", color=colors[idx])
+    plt.axvline(best_fit["window_min"], color='k', alpha=0.2, linestyle="--")
+    plt.axvline(best_fit["window_max"], color='k', alpha=0.2, linestyle="--")
+
+plt.ylim(*lims)
 plt.xlabel("overpotential (V)")
 plt.ylabel("log current")
+plt.legend(loc="lower right")
+
+plt.axvline(0, color="k", alpha=0.5)
 plt.show()
 ```
