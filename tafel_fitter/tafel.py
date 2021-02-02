@@ -2,12 +2,45 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from scipy import stats
+from scipy import stats, optimize
 
 R = 8.3145  # J/mol.K
 F = 96485  # C/mol
 T = 293  # K
 
+
+def estimate_overpotential(x, y, w=10):
+    id_min = np.abs(y).argmin()
+    sel = slice(id_min-10, id_min+10)
+    slope, intercept, *rest = stats.linregress(x[sel], y[sel])
+
+    def f(x):
+        return abs(intercept + slope*x)
+
+    res = optimize.minimize_scalar(f)
+
+    return x - res.x
+
+def tafel_fit(x, y, windows=np.arange(0.025, 0.1, 0.001)):
+
+    segments = {
+        "cathodic": x < 0,
+        "anodic": x > 0
+    }
+
+    tafel_data, fits = {}, {}
+    for segment, slc in segments.items():
+
+        xx, yy = x[slc], y[slc]
+
+        results = fit_all(xx, yy, scan_type=segment, windows=windows)
+        d = filter_r2(results)
+        best_fit, subset = find_best_fit(d, tafel_binsize=0.01)
+
+        tafel_data[segment] = best_fit
+        fits[segment] = subset
+
+    return tafel_data, fits
 
 def fit_all(
     x: np.array,
@@ -88,6 +121,9 @@ def fit_windows(
         )
 
     r = pd.DataFrame(results)
+    n_fits, _ = r.shape
+    if n_fits == 0:
+        return None
 
     # Tafel residue -- quantify the quality of the Tafel/linearity assumption
     r["residue"] = np.abs(r["dj/dV"] - r["j0"] * (F / n * R * T))
@@ -128,7 +164,8 @@ def find_best_fit(
 
     # bin the tafel slopes
     tslope = df["dlog(j)/dV"]
-    nbins = int(np.round(tslope.max() - tslope.min() / tafel_binsize))
+    nbins = int(np.abs(np.round(tslope.max() - tslope.min() / tafel_binsize)))
+    print(nbins)
 
     def count_unique_values(x: np.array) -> int:
         return np.unique(x).size
@@ -145,7 +182,20 @@ def find_best_fit(
     bin_min, bin_max = bins[id_bin], bins[id_bin + 1]
     subset = df[(tslope > bin_min) & (tslope < bin_max)]
 
+
+    # try to filter outliers
+
+    # drop = np.logical_or(
+    #     subset["R2_lsv"] < subset["R2_lsv"].mean() - 2*subset["R2_lsv"].std(),
+    #     subset["R2_tafel"] < subset["R2_tafel"].mean() - 2*subset["R2_tafel"].std()
+    # )
+    # subset = subset[~drop]
+
+
     # the "best" fit has the highest Tafel R^2 value in this tafel slope bin
     best_fit = subset.sort_values(by="R2_tafel").iloc[-1]
+    # best_fit = subset.sort_values(by="R2_lsv").iloc[-1]
+    # subset["r2sum"] = subset["R2_tafel"] + subset["R2_lsv"]
+    # best_fit = subset.sort_values(by="r2sum").iloc[-1]
 
     return best_fit, subset
