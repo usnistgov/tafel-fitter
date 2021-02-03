@@ -150,7 +150,7 @@ def filter_r2(
         # record the fit with minimal tafel residue for each fitting window size
         for w, group in df[sel].groupby("window"):
             if group.size > 0:
-                idx = group["residue"].argmin()
+                idx = group["residue"].values.argmin()
                 rows.append(group.iloc[idx])
 
     return pd.DataFrame(rows)
