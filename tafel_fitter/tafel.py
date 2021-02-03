@@ -9,7 +9,7 @@ F = 96485  # C/mol
 T = 293  # K
 
 
-def estimate_overpotential(x, y, w=10):
+def estimate_ocp(x, y, w=10):
     id_min = np.abs(y).argmin()
     sel = slice(id_min-10, id_min+10)
     slope, intercept, *rest = stats.linregress(x[sel], y[sel])
@@ -19,7 +19,11 @@ def estimate_overpotential(x, y, w=10):
 
     res = optimize.minimize_scalar(f)
 
-    return x - res.x
+    return res.x
+
+def estimate_overpotential(x, y, w=10):
+    ocp = estimate_ocp(x, y, w=w)
+    return x - ocp
 
 def tafel_fit(x, y, windows=np.arange(0.025, 0.1, 0.001)):
 
