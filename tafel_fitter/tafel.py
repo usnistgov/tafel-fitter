@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from scipy import stats, optimize
+from scipy import optimize, stats
 
 R = 8.3145  # J/mol.K
 F = 96485  # C/mol
@@ -11,26 +11,25 @@ T = 293  # K
 
 def estimate_ocp(x, y, w=10):
     id_min = np.abs(y).argmin()
-    sel = slice(id_min-10, id_min+10)
+    sel = slice(id_min - 10, id_min + 10)
     slope, intercept, *rest = stats.linregress(x[sel], y[sel])
 
     def f(x):
-        return abs(intercept + slope*x)
+        return abs(intercept + slope * x)
 
     res = optimize.minimize_scalar(f)
 
     return res.x
 
+
 def estimate_overpotential(x, y, w=10):
     ocp = estimate_ocp(x, y, w=w)
     return x - ocp
 
+
 def tafel_fit(x, y, windows=np.arange(0.025, 0.1, 0.001)):
 
-    segments = {
-        "cathodic": x < 0,
-        "anodic": x > 0
-    }
+    segments = {"cathodic": x < 0, "anodic": x > 0}
 
     tafel_data, fits = {}, {}
     for segment, slc in segments.items():
@@ -46,12 +45,13 @@ def tafel_fit(x, y, windows=np.arange(0.025, 0.1, 0.001)):
 
     return tafel_data, fits
 
+
 def fit_all(
     x: np.array,
     y: np.array,
     windows: np.array = np.arange(0.01, 0.05, 0.001),
     R2_thresh: float = 0.9,
-    scan_type="cathodic"
+    scan_type="cathodic",
 ) -> pd.DataFrame:
     """ fit tafel model on all sub-windows for each window size in `windows` """
 
@@ -186,7 +186,6 @@ def find_best_fit(
     bin_min, bin_max = bins[id_bin], bins[id_bin + 1]
     subset = df[(tslope > bin_min) & (tslope < bin_max)]
 
-
     # try to filter outliers
 
     # drop = np.logical_or(
@@ -194,7 +193,6 @@ def find_best_fit(
     #     subset["R2_tafel"] < subset["R2_tafel"].mean() - 2*subset["R2_tafel"].std()
     # )
     # subset = subset[~drop]
-
 
     # the "best" fit has the highest Tafel R^2 value in this tafel slope bin
     best_fit = subset.sort_values(by="R2_tafel").iloc[-1]
