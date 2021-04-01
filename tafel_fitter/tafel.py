@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from scipy import optimize, stats
+from scipy import optimize
+from scipy import signal
+from scipy import stats
 
 R = 8.3145  # J/mol.K
 F = 96485  # C/mol
@@ -27,7 +29,31 @@ def estimate_overpotential(x, y, w=10):
     return x - ocp
 
 
-def tafel_fit(x, y, windows=np.arange(0.025, 0.1, 0.001)):
+def check_inflection(x, y):
+
+    order = np.argsort(x)
+
+    if x.mean() < 0:
+        # sort by decreasing voltage for cathodic scans
+        order = order[::-1]
+
+    xx, yy = x.copy()[order], y.copy()[order]
+
+    deriv = signal.savgol_filter(yy, 11, 3, deriv=1)
+    id_inflection = deriv.argmax()
+    if x.mean() < 0:
+        xx = xx[id_inflection:]
+        yy = yy[id_inflection:]
+    else:
+        xx = xx[:id_inflection]
+        yy = yy[:id_inflection]
+
+    # revert to increasing voltage
+    order = np.argsort(xx)
+    return xx[order], yy[order]
+
+
+def tafel_fit(x, y, windows=np.arange(0.025, 0.1, 0.001), clip_inflection=False):
 
     segments = {"cathodic": x < 0, "anodic": x > 0}
 
@@ -35,6 +61,12 @@ def tafel_fit(x, y, windows=np.arange(0.025, 0.1, 0.001)):
     for segment, slc in segments.items():
 
         xx, yy = x[slc], y[slc]
+
+        print(xx.min(), xx.max())
+        if clip_inflection:
+            # print(xx.min(), xx.max())
+            xx, yy = check_inflection(xx, yy)
+            print(xx.min(), xx.max())
 
         results = fit_all(xx, yy, scan_type=segment, windows=windows)
         d = filter_r2(results)
