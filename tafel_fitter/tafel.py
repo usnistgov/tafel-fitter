@@ -12,8 +12,8 @@ T = 293  # K
 
 
 def estimate_ocp(x, y, w=10):
-    id_min = np.abs(y).argmin()
-    sel = slice(id_min - 10, id_min + 10)
+    id_min = np.nanargmin(np.abs(y))
+    sel = slice(id_min - w, id_min + w)
     slope, intercept, *rest = stats.linregress(x[sel], y[sel])
 
     def f(x):
@@ -30,23 +30,23 @@ def estimate_overpotential(x, y, w=10):
 
 
 def check_inflection(x, y):
+    """try to fit low overpotential with negative curvature
 
-    order = np.argsort(x)
+    i.e. take the Savitsky-Golay 2nd derivative and select
+    the part of the curve with negative curvature
 
-    if x.mean() < 0:
-        # sort by decreasing voltage for cathodic scans
-        order = order[::-1]
-
+    The method from 10.1021/acs.jpcc.9b06820 does not seem
+    to work well for some of our data
+    """
+    order = np.argsort(np.abs(x))
     xx, yy = x.copy()[order], y.copy()[order]
 
-    deriv = signal.savgol_filter(yy, 11, 3, deriv=1)
-    id_inflection = deriv.argmax()
-    if x.mean() < 0:
-        xx = xx[id_inflection:]
-        yy = yy[id_inflection:]
-    else:
-        xx = xx[:id_inflection]
-        yy = yy[:id_inflection]
+    deriv = signal.savgol_filter(np.log10(np.abs(yy)), 3, 2, deriv=2)
+    sgn = np.sign(deriv)
+    (slc,) = np.where(sgn <= 0)
+    id_inflection = np.argmax(slc)
+
+    xx = xx[:id_inflection]
 
     # revert to increasing voltage
     order = np.argsort(xx)
@@ -62,11 +62,8 @@ def tafel_fit(x, y, windows=np.arange(0.025, 0.1, 0.001), clip_inflection=False)
 
         xx, yy = x[slc], y[slc]
 
-        print(xx.min(), xx.max())
         if clip_inflection:
-            # print(xx.min(), xx.max())
             xx, yy = check_inflection(xx, yy)
-            print(xx.min(), xx.max())
 
         results = fit_all(xx, yy, scan_type=segment, windows=windows)
         d = filter_r2(results)
@@ -197,11 +194,9 @@ def find_best_fit(
     2. select tafel slope bin with greatest range of fitting window size
     3. select from this tafel slope bin the fit with the best R^2 value
     """
-
     # bin the tafel slopes
     tslope = df["dlog(j)/dV"]
     nbins = int(np.abs(np.round(tslope.max() - tslope.min() / tafel_binsize)))
-    print(nbins)
 
     def count_unique_values(x: np.array) -> int:
         return np.unique(x).size
@@ -216,7 +211,7 @@ def find_best_fit(
     # then select all the fits in this tafel slope bin
     id_bin = nwindows.argmax()
     bin_min, bin_max = bins[id_bin], bins[id_bin + 1]
-    subset = df[(tslope > bin_min) & (tslope < bin_max)]
+    subset = df[(tslope >= bin_min) & (tslope <= bin_max)]
 
     # try to filter outliers
 
