@@ -228,6 +228,6 @@ def find_best_fit(
     # best_fit = subset.sort_values(by="r2sum").iloc[-1]
 
     # instead, sort by window size
-    best_fit = subset.sort_values(by="window").iloc[-1]
+    #best_fit = subset.sort_values(by="window").iloc[-1]
 
     return best_fit, subset
