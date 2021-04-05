@@ -67,7 +67,7 @@ def tafel_fit(x, y, windows=np.arange(0.025, 0.1, 0.001), clip_inflection=False)
 
         results = fit_all(xx, yy, scan_type=segment, windows=windows)
         d = filter_r2(results)
-        best_fit, subset = find_best_fit(d, tafel_binsize=0.01)
+        best_fit, subset = find_best_fit(d, tafel_binsize=0.025)
 
         tafel_data[segment] = best_fit
         fits[segment] = subset
@@ -174,7 +174,7 @@ def filter_r2(
     rows = []
 
     for threshold in r2_threshold:
-        sel = (df["R2_tafel"] > threshold) & (df["R2_lsv"] > threshold)
+        sel = (df["R2_tafel"] > threshold) & (df["R2_lsv"] > 0.8)
 
         # record the fit with minimal tafel residue for each fitting window size
         for w, group in df[sel].groupby("window"):
@@ -226,5 +226,8 @@ def find_best_fit(
     # best_fit = subset.sort_values(by="R2_lsv").iloc[-1]
     # subset["r2sum"] = subset["R2_tafel"] + subset["R2_lsv"]
     # best_fit = subset.sort_values(by="r2sum").iloc[-1]
+
+    # instead, sort by window size
+    best_fit = subset.sort_values(by="window").iloc[-1]
 
     return best_fit, subset
