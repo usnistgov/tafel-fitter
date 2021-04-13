@@ -53,7 +53,7 @@ def check_inflection(x, y):
     return xx[order], yy[order]
 
 
-def tafel_fit(x, y, windows=np.arange(0.025, 0.1, 0.001), clip_inflection=False):
+def tafel_fit(x, y, windows=np.arange(0.025, 0.1, 0.001), clip_inflection=False,tafel_binsize=0.025):
 
     segments = {"cathodic": x < 0, "anodic": x > 0}
 
@@ -67,7 +67,7 @@ def tafel_fit(x, y, windows=np.arange(0.025, 0.1, 0.001), clip_inflection=False)
 
         results = fit_all(xx, yy, scan_type=segment, windows=windows)
         d = filter_r2(results)
-        best_fit, subset = find_best_fit(d, tafel_binsize=0.025)
+        best_fit, subset = find_best_fit(d, tafel_binsize)
 
         tafel_data[segment] = best_fit
         fits[segment] = subset
