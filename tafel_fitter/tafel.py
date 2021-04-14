@@ -179,7 +179,7 @@ def filter_r2(
     rows = []
     print(f'lav_threshold={lsv_threshold}')
     for threshold in r2_threshold:
-        sel = (df["R2_tafel"] > threshold) & (df["R2_lsv"] > lsv_threshold)
+        sel = (df["R2_tafel"] > threshold) & (df["R2_lsv"] > threshold)
 
         # record the fit with minimal tafel residue for each fitting window size
         for w, group in df[sel].groupby("window"):
