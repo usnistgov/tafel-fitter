@@ -67,7 +67,7 @@ def tafel_fit(x, y, windows=np.arange(0.025, 0.1, 0.001), clip_inflection=False,
 
         results = fit_all(xx, yy, scan_type=segment, windows=windows)
         d = filter_r2(results,lsv_threshold=lsv_threshold)
-        best_fit, subset = find_best_fit(d, tafel_binsize)=tafel_binsize
+        best_fit, subset = find_best_fit(d, tafel_binsize=tafel_binsize)
 
         tafel_data[segment] = best_fit
         fits[segment] = subset
