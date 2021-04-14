@@ -103,7 +103,7 @@ def fit_windows(
     scan_type: str = "cathodic",
     minover=-.15,
     maxover=.12,
-    innerlim=.04
+    innerlim=.05
 ) -> pd.DataFrame:
     """fit a tafel model on each sub-window of size `window`
     L137 in ba3cc165515cc335578db76cf6fff4672afacb29
@@ -180,7 +180,7 @@ def filter_r2(
     rows = []
     print(f'lav_threshold={lsv_threshold}')
     for threshold in r2_threshold:
-        sel = (df["R2_tafel"] > threshold) & (df["R2_lsv"] > threshold)
+        sel = (df["R2_tafel"] > threshold) & (df["R2_lsv"] > lsv_threshold)
 
         # record the fit with minimal tafel residue for each fitting window size
         for w, group in df[sel].groupby("window"):
