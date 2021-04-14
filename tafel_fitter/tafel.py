@@ -101,8 +101,8 @@ def fit_windows(
     window: float,
     n: int = 1,
     scan_type: str = "cathodic",
-    minover=.12
-    maxover=.12
+    minover=.12,
+    maxover=.12,
 ) -> pd.DataFrame:
     """fit a tafel model on each sub-window of size `window`
     L137 in ba3cc165515cc335578db76cf6fff4672afacb29
