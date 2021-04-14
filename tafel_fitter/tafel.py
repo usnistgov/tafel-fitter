@@ -132,7 +132,7 @@ def fit_windows(
             mask = slice(idx, idx + window_samples)
 
         win_center=np.median(potential[mask])
-        if (win_center<minover) or (wincenter>maxover):
+        if (win_center<minover) or (win_center>maxover):
             continue
         # fit Tafel data
         slope_tafel, intercept_tafel, r_tafel, *rest = stats.linregress(
