@@ -103,6 +103,7 @@ def fit_windows(
     scan_type: str = "cathodic",
     minover=-.15,
     maxover=.12,
+    innerlim=.04
 ) -> pd.DataFrame:
     """fit a tafel model on each sub-window of size `window`
     L137 in ba3cc165515cc335578db76cf6fff4672afacb29
@@ -132,7 +133,7 @@ def fit_windows(
             mask = slice(idx, idx + window_samples)
 
         win_center=np.median(potential[mask])
-        if (win_center<minover) or (win_center>maxover):
+        if (win_center<minover) or (win_center>maxover) or (np.abs(win_center)<innerlim):
             continue
         # fit Tafel data
         slope_tafel, intercept_tafel, r_tafel, *rest = stats.linregress(
