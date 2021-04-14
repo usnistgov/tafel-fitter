@@ -172,7 +172,7 @@ def filter_r2(
 ) -> pd.DataFrame:
     """ record minimal-tafel-residue fits as a function of R^2 threshold """
     rows = []
-    #print(r2_threshold)
+    print(f'lav_threshold={lsv_threshold}')
     for threshold in r2_threshold:
         sel = (df["R2_tafel"] > threshold) & (df["R2_lsv"] > lsv_threshold)
 
