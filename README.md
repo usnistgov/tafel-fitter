@@ -1,4 +1,4 @@
-# tafel_fitter
+# tafel-fitter
 
 A Tafel analysis library based on [10.1021/acs.jpcc.9b06820](https://dx.doi.org/10.1021/acs.jpcc.9b06820). This repository is a fork of the reference implementation https://github.com/MEG-LBNL/Tafel_Fitter.
 
